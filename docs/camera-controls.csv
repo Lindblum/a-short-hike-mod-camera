@@ -1,0 +1,36 @@
+group,constant,source,unit,auto: ground,auto: flight,3rd: ground,3rd: flight,1st: ground,1st: flight,notes
+look,YawSpeed,cfg Controls,deg/s,-,-,180,180,180,180 (also turns heading),RS horizontal
+look,PitchSpeed,cfg Controls,deg/s,-,-,120,120,120,120,RS vertical
+look,InvertY,cfg Controls,bool,-,-,false,false,false,false,
+look,LOOK_ANGLE nudge,game const,deg,15 x 10,15 x 10,off,off,off,off,Game's small RS look-around; disabled while the mod camera is live
+look,RS idle threshold,hard-coded,|stick|,-,-,-,0.2,-,-,Below this the RS counts as idle (gates glide heading follow and glide camera pitch)
+look,Pitch limits,cfg MinPitch/MaxPitch,deg,-,-,-35 / 75,-35 / 75,-80 / 80,-80 / 80,
+framing,Distance,cfg ThirdPerson,units,-,-,10,10,-,-,
+framing,PivotHeight,cfg ThirdPerson,units,-,-,2.2,2.2,-,-,Orbit point above feet
+framing,FieldOfView,cfg Third/FirstPerson,deg,game,game,50,50,70,70,
+framing,Collision radius / min distance,hard-coded,units,-,-,0.25 / 0.4,0.25 / 0.4,-,-,Camera pulls in when terrain blocks
+framing,Collision ease-out,hard-coded,units/s,-,-,6,6,-,-,Pull-in is instant
+framing,Near clip,hard-coded,units,game,game,0.1,0.1,0.05,0.05,
+framing,Eye height,detected (eye objects / head bone),units,-,-,-,-,detected,detected,
+framing,EyeHeightOffset,cfg FirstPerson,units,-,-,-,-,0,0,
+framing,Eye height smoothing,hard-coded,1/s,-,-,-,-,4,4,Removes walk bob
+framing,HidePlayerModel,cfg FirstPerson,bool,-,-,-,-,true,true,Shadow kept
+steering,Steering,cfg Controls,enum,game,game,Auto -> strafe,Auto -> turn,Auto -> strafe,Auto -> turn,Auto = turn while gliding
+steering,LS left/right,behaviour,,move (camera-relative),steer (camera-relative),move (camera-relative),turn heading,move (camera-relative),turn heading (= view),
+steering,LS up/down,behaviour,,move (camera-relative),"pushed = flat, released = dive",move (camera-relative),"up = dive, neutral/down = flat",move (camera-relative),"pushed = flat, released = dive",3rd-person flight differs from the game
+steering,TurnSpeed,cfg Controls,deg/s,-,-,-,75,-,75,At full LS deflection
+steering,Heading starts from,behaviour,,-,-,-,Claire's facing,-,current view,Set when the glide starts
+steering,Climbing / boat,behaviour,,game,game,game,game,game,game,Turn steering off while climbing or mounted
+follow,GlideFollowSpeed,cfg ThirdPerson,deg/s,-,-,-,120,-,-,Max rate the camera swings in behind your heading
+follow,Follow ease,hard-coded,x angle /s,-,-,-,3,-,-,"Rate = min(angle x 3, GlideFollowSpeed)"
+follow,GlideCameraPitch,cfg ThirdPerson,deg,-,-,-,15,-,-,Camera pitch target while gliding
+follow,Glide camera pitch ease,hard-coded,deg/s,-,-,-,45,-,-,
+glide,GlidePitch,cfg Controls,bool,-,-,-,true (LS up = dive),-,ignored (game glide),
+glide,GlideDiveCameraPitch,cfg Controls,deg,-,-,-,30,-,-,Extra camera tilt at full dive
+glide,Game dive mapping,game const,,-,1 - |LS| x 1.17,-,replaced,-,1 - |LS| x 1.17,Turning with LS left/right also flattens the glide
+glide,Max dive angle,game const,deg,-,60,-,60,-,60,
+glide,Updrafts,game,,-,game,-,game,-,game,Never overridden
+transition,Auto <-> 3rd / 1st,Cinemachine blend,,game blend,game blend,game blend,game blend,game blend,game blend,
+transition,TransitionTime (3rd -> 1st),cfg FirstPerson,s,-,-,-,-,0.5,0.5,Model hides at 85%
+stereo,EyeSeparation,cfg Stereo3D,units,0.1,0.1,0.1,0.1,0.1,0.1,When 3D is on
+stereo,Convergence,cfg Stereo3D,units,10,10,10,10,10,10,When 3D is on; matches 3rd-person Distance

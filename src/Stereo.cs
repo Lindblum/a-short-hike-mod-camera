@@ -29,7 +29,6 @@ namespace ShortHikeCamera
         internal static bool On => mode != null && mode.Value == StereoMode.HalfSBS;
 
         private static PixelFilterAdjuster pfa;
-        private static float pfaSearchTimer;
         private static bool applied;
         private static StereoMode lastMode;
 
@@ -44,6 +43,7 @@ namespace ShortHikeCamera
             eyeSeparation = config.Bind("Stereo3D", "EyeSeparation", 0.1f, "Distance between the two eye cameras, in world units. Larger = stronger 3D.");
             convergence = config.Bind("Stereo3D", "Convergence", 10f, "Distance that appears at screen depth. Nearer things pop out, farther things sink in.");
             swapEyes = config.Bind("Stereo3D", "SwapEyes", false, "Swap left/right images (if depth looks inside-out).");
+            flatFlip = config.Bind("Stereo3D", "FlipMenus", false, "Set true if the title screen / menus appear upside down in 3D mode.");
             lastMode = mode.Value;
             Application.onBeforeRender += OnBeforeRender;
         }
@@ -51,22 +51,45 @@ namespace ShortHikeCamera
         internal static void SetMode(StereoMode m)
         {
             mode.Value = m; // saves the config
+            Plugin.Instance?.MarkConfigSavedByUs();
             CheckModeChanged();
         }
 
         /// Called every frame from the plugin's update loop.
         internal static void Tick()
         {
-            if (pfa == null)
+            // Find the render setup exactly the way the game does (same instance its options code
+            // reconfigures). Throttled, except right away when the mode changes.
+            pfaCheckTimer -= Time.unscaledDeltaTime;
+            bool modeChanged = mode.Value != lastMode;
+            if (pfaCheckTimer > 0f && !modeChanged) { CheckModeChanged(); return; }
+            pfaCheckTimer = 0.5f;
+
+            PixelFilterAdjuster current = LocatePfa();
+            if (current != pfa)
             {
-                pfaSearchTimer -= Time.unscaledDeltaTime;
-                if (pfaSearchTimer <= 0f)
+                if (applied) Unapply();
+                pfa = current;
+                if (pfa != null && On)
                 {
-                    pfaSearchTimer = 1f;
-                    pfa = UnityEngine.Object.FindObjectOfType<PixelFilterAdjuster>();
+                    Plugin.Log.LogInfo("Stereo: new render setup found, reconfiguring.");
+                    Reconfigure();
                 }
             }
             CheckModeChanged();
+        }
+
+        private static float pfaCheckTimer;
+        private static ServiceLocator locator;
+
+        private static PixelFilterAdjuster LocatePfa()
+        {
+            try
+            {
+                if (locator == null) locator = UnityEngine.Object.FindObjectOfType<ServiceLocator>();
+                return locator != null ? locator.Locate<PixelFilterAdjuster>(allowFail: true) : null;
+            }
+            catch { return null; }
         }
 
         private static void CheckModeChanged()
@@ -75,10 +98,18 @@ namespace ShortHikeCamera
             lastMode = mode.Value;
             Plugin.Log.LogInfo("Stereo mode -> " + mode.Value);
             if (!On) Unapply();
-            // Re-run the game's render-texture setup so our SetPixelSize patch can (un)avoid the
-            // "render straight into the full-res UI texture" path.
-            if (pfa != null) PixelFilterAdjuster.pixelWidth = PixelFilterAdjuster.pixelWidth;
+            Reconfigure();
         }
+
+        /// Re-run the game's render-texture setup so our SetPixelSize patch can steer it off the
+        /// "render straight into the full-res UI texture" path (and back).
+        private static void Reconfigure()
+        {
+            try { PixelFilterAdjuster.pixelWidth = PixelFilterAdjuster.pixelWidth; }
+            catch (Exception e) { Plugin.Log.LogWarning("Stereo: reconfigure failed: " + e.Message); }
+        }
+
+        private static bool loggedDirectPath;
 
         private static void OnBeforeRender()
         {
@@ -91,7 +122,12 @@ namespace ShortHikeCamera
                 // Left eye texture = the game's own world texture. Skip the direct-to-UI-texture path
                 // (it's avoided by our SetPixelSize patch once the setup re-runs).
                 RenderTexture left = cam.targetTexture;
-                if (left == null || left == pfa.originalRenderTexture) return;
+                if (left == null || left == pfa.originalRenderTexture)
+                {
+                    if (!loggedDirectPath) { loggedDirectPath = true; Plugin.Log.LogInfo("Stereo: waiting for render setup (direct path), reconfiguring."); Reconfigure(); }
+                    return;
+                }
+                loggedDirectPath = false;
 
                 EnsureRightEyeTexture(left);
                 applied = true;
@@ -169,6 +205,85 @@ namespace ShortHikeCamera
             worldSplit.Restore();
             uiSplit.Restore();
             if (rightEye != null) { rightEye.Release(); rightEye = null; }
+        }
+
+        /// True while the in-game (true depth) stereo path is driving the picture.
+        internal static bool WorldStereoActive => applied;
+
+        // ---------- Fallback: flat SBS for screens without the game's render setup ----------
+        // Opening logos, title screen / main menu, credits... draw straight to the screen, so at the
+        // end of the frame we copy the finished image and draw it squeezed into both halves.
+
+        private static RenderTexture capture;
+        private static Material copyMat;
+        private static string loggedSceneSetup;
+        internal static ConfigEntry<bool> flatFlip;
+
+        internal static IEnumerator EndOfFrameLoop()
+        {
+            var wait = new WaitForEndOfFrame();
+            while (true)
+            {
+                yield return wait;
+                try { OnEndOfFrame(); }
+                catch (Exception e)
+                {
+                    Plugin.Log.LogError("Stereo (menus) failed, turning 3D off: " + e);
+                    mode.Value = StereoMode.Off;
+                }
+            }
+        }
+
+        private static void OnEndOfFrame()
+        {
+            if (!On || applied)
+            {
+                if (!On && capture != null) { capture.Release(); capture = null; }
+                return;
+            }
+
+            int w = Screen.width, h = Screen.height;
+            if (w <= 0 || h <= 0) return;
+            LogSceneSetupOnce();
+
+            if (capture == null || capture.width != w || capture.height != h)
+            {
+                if (capture != null) capture.Release();
+                capture = new RenderTexture(w, h, 0) { name = "ShortHikeCamera_MenuCapture", filterMode = FilterMode.Bilinear };
+                capture.Create();
+            }
+            if (copyMat == null)
+            {
+                Shader s = Shader.Find("Hidden/BlitCopy");
+                if (s != null) copyMat = new Material(s) { name = "ShortHikeCamera_MenuCopy" };
+            }
+
+            ScreenCapture.CaptureScreenshotIntoRenderTexture(capture);
+
+            // Captures come out upside down where UVs start at the top (D3D); SBS config can override.
+            bool flip = SystemInfo.graphicsUVStartsAtTop != flatFlip.Value;
+            Rect src = flip ? new Rect(0f, 1f, 1f, -1f) : new Rect(0f, 0f, 1f, 1f);
+
+            RenderTexture.active = null;
+            GL.PushMatrix();
+            GL.LoadPixelMatrix(0f, w, h, 0f);
+            if (copyMat == null) GL.Clear(false, true, Color.black);
+            Graphics.DrawTexture(new Rect(0f, 0f, w * 0.5f, h), capture, src, 0, 0, 0, 0, copyMat);
+            Graphics.DrawTexture(new Rect(w * 0.5f, 0f, w * 0.5f, h), capture, src, 0, 0, 0, 0, copyMat);
+            GL.PopMatrix();
+        }
+
+        /// Log the camera setup of screens using the fallback, to help add true depth to them later.
+        private static void LogSceneSetupOnce()
+        {
+            string scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+            if (scene == loggedSceneSetup) return;
+            loggedSceneSetup = scene;
+            Plugin.Log.LogInfo("Stereo: flat SBS fallback on scene '" + scene + "' (render setup found: " + (pfa != null) + ")");
+            foreach (Camera c in Camera.allCameras)
+                Plugin.Log.LogInfo("  camera " + c.name + " depth=" + c.depth + " ortho=" + c.orthographic
+                    + " target=" + (c.targetTexture != null ? c.targetTexture.name + " " + c.targetTexture.width + "x" + c.targetTexture.height : "screen")
+                    + " rect=" + c.rect + " mask=" + c.cullingMask);
         }
 
         // ---------- Options menu text (lowercase, like the game's own options) ----------
