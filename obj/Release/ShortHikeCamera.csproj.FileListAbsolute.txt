@@ -1,9 +1,0 @@
-C:\Users\david\Desktop\Projects-Claude\a-short-hike-mod-camera\bin\Release\ShortHikeCamera.dll
-C:\Users\david\Desktop\Projects-Claude\a-short-hike-mod-camera\bin\Release\ShortHikeCamera.pdb
-C:\Users\david\Desktop\Projects-Claude\a-short-hike-mod-camera\obj\Release\ShortHikeCamera.csproj.AssemblyReference.cache
-C:\Users\david\Desktop\Projects-Claude\a-short-hike-mod-camera\obj\Release\ShortHikeCamera.GeneratedMSBuildEditorConfig.editorconfig
-C:\Users\david\Desktop\Projects-Claude\a-short-hike-mod-camera\obj\Release\ShortHikeCamera.AssemblyInfoInputs.cache
-C:\Users\david\Desktop\Projects-Claude\a-short-hike-mod-camera\obj\Release\ShortHikeCamera.AssemblyInfo.cs
-C:\Users\david\Desktop\Projects-Claude\a-short-hike-mod-camera\obj\Release\ShortHikeCamera.csproj.CoreCompileInputs.cache
-C:\Users\david\Desktop\Projects-Claude\a-short-hike-mod-camera\obj\Release\ShortHikeCamera.dll
-C:\Users\david\Desktop\Projects-Claude\a-short-hike-mod-camera\obj\Release\ShortHikeCamera.pdb
