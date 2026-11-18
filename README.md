@@ -20,7 +20,7 @@ A BepInEx mod for *A Short Hike* that adds player-controlled camera modes and ha
 
 1. Install [BepInEx 5 (x86)](https://github.com/BepInEx/BepInEx/releases) into the game folder (next to `AShortHike.exe`) and run the game once.
 2. In `BepInEx\config\BepInEx.cfg`, set `HideManagerGameObject = true`.
-3. Copy `ShortHikeCamera.dll` into `BepInEx\plugins\`.
+3. Extract `ShortHikeCamera-<version>.zip` into the game folder (it puts `ShortHikeCamera.dll` in `BepInEx\plugins\ShortHikeCamera\`).
 
 ## Settings
 

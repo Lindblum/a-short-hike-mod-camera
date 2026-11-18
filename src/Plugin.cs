@@ -13,10 +13,11 @@ namespace ShortHikeCamera
     public enum CameraMode { Auto, ThirdPerson, FirstPerson }
     public enum SteeringMode { Auto, Turn, Strafe }
 
-    [BepInPlugin(Guid, "Short Hike Camera Modes", "1.0.0")]
+    [BepInPlugin(Guid, "Short Hike Camera Modes", Version)]
     public class Plugin : BaseUnityPlugin
     {
         public const string Guid = "local.ashorthike.cameramodes";
+        public const string Version = "1.0.0"; // keep in step with <Version> in the .csproj
 
         internal static Plugin Instance;
         internal static ManualLogSource Log;

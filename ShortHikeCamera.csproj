@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net472</TargetFramework>
     <AssemblyName>ShortHikeCamera</AssemblyName>
+    <Version>1.0.0</Version>
     <RootNamespace>ShortHikeCamera</RootNamespace>
     <LangVersion>latest</LangVersion>
     <Nullable>disable</Nullable>
@@ -34,6 +35,19 @@
   <!-- Copy the built plugin into the game's BepInEx plugins folder. -->
   <Target Name="DeployToGame" AfterTargets="Build">
     <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(GamePath)\BepInEx\plugins" />
+  </Target>
+
+  <!-- Release builds also produce dist\ShortHikeCamera-<version>.zip for Nexus Mods:
+       its contents extract straight into the game folder. -->
+  <Target Name="PackageForNexus" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
+    <PropertyGroup>
+      <PackageStage>$(BaseIntermediateOutputPath)package\</PackageStage>
+      <DistDir>$(MSBuildProjectDirectory)\dist\</DistDir>
+    </PropertyGroup>
+    <RemoveDir Directories="$(PackageStage)" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(PackageStage)BepInEx\plugins\ShortHikeCamera" />
+    <MakeDir Directories="$(DistDir)" />
+    <ZipDirectory SourceDirectory="$(PackageStage)" DestinationFile="$(DistDir)ShortHikeCamera-$(Version).zip" Overwrite="true" />
   </Target>
 
 </Project>
