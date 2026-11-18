@@ -24,7 +24,7 @@ A BepInEx mod for *A Short Hike* that adds player-controlled camera modes and ha
 
 ## Settings
 
-`BepInEx\config\local.ashorthike.cameramodes.cfg` (reloaded live while the game runs). For which constants apply in which view mode and button state, see [docs/camera-controls.csv](docs/camera-controls.csv).
+`BepInEx\config\local.ashorthike.cameramodes.cfg` (reloaded live while the game runs).
 
 | Section | Setting | Default | |
 |---|---|---|---|
@@ -36,6 +36,7 @@ A BepInEx mod for *A Short Hike* that adds player-controlled camera modes and ha
 | Controls | `ItemSwitching` | true | RB/LB cycle items (replaces LB put-away/drop) |
 | Controls | `GlidePitch` | true | While turn-steering a glide: left stick ↑ = dive, neutral/↓ = flat glide (3rd person only; 1st person keeps the game's glide) |
 | Controls | `GlideDiveCameraPitch` | 30 | Extra camera tilt at a full dive (°) |
+| General | `BlendTime` | 1 | Seconds to blend between the game's cameras and the mod's (entering 3rd person, leaving 1st person; 0 = instant) |
 | ThirdPerson | `Distance` | 10 | Camera distance |
 | ThirdPerson | `PivotHeight` | 2.2 | Orbit point height above feet |
 | ThirdPerson | `FieldOfView` | 50 | |
@@ -44,7 +45,7 @@ A BepInEx mod for *A Short Hike* that adds player-controlled camera modes and ha
 | FirstPerson | `EyeHeightOffset` | 0 | Added to Claire's eye level (negative = lower) |
 | FirstPerson | `FieldOfView` | 70 | |
 | FirstPerson | `HidePlayerModel` | true | |
-| FirstPerson | `TransitionTime` | 0.5 | Seconds to move in from 3rd to 1st person (0 = instant) |
+| FirstPerson | `TransitionTime` | 1 | Seconds to move in from 3rd to 1st person (0 = instant) |
 | Stereo3D | `Mode` | Off | `Off` / `HalfSBS` |
 | Stereo3D | `EyeSeparation` | 0.1 | Higher = stronger 3D |
 | Stereo3D | `Convergence` | 10 | Distance at screen depth |

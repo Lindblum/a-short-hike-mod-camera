@@ -35,6 +35,7 @@ namespace ShortHikeCamera
         internal ConfigEntry<float> fpEyeOffset, fpFov, fpMaxPitch;
         internal ConfigEntry<bool> fpHidePlayer;
         internal ConfigEntry<float> fpTransitionTime;
+        internal ConfigEntry<float> blendTime;
 
         // State
         internal CameraMode mode = CameraMode.Auto;
@@ -43,7 +44,7 @@ namespace ShortHikeCamera
         internal bool ourCameraLive;        // our vcam is enabled and driving the view
 
         private GameObject camObj;
-        private CinemachineVirtualCamera vcam;
+        internal CinemachineVirtualCamera vcam;
         private LevelController level;
         private float levelSearchTimer;
         private Player player;
@@ -87,7 +88,8 @@ namespace ShortHikeCamera
             fpEyeOffset = Config.Bind("FirstPerson", "EyeHeightOffset", 0f, "Extra height added to Claire's eye level (negative = lower).");
             fpFov = Config.Bind("FirstPerson", "FieldOfView", 70f, "Vertical field of view.");
             fpMaxPitch = Config.Bind("FirstPerson", "MaxPitch", 80f, "Max look up/down angle.");
-            fpTransitionTime = Config.Bind("FirstPerson", "TransitionTime", 0.5f, "Seconds for the camera to move in from 3rd person to 1st person (0 = instant).");
+            fpTransitionTime = Config.Bind("FirstPerson", "TransitionTime", 1f, "Seconds for the camera to move in from 3rd person to 1st person (0 = instant).");
+            blendTime = Config.Bind("General", "BlendTime", 1f, "Seconds for the camera to blend between the game's cameras and ours (entering 3rd person, leaving 1st person). 0 = instant.");
             fpHidePlayer = Config.Bind("FirstPerson", "HidePlayerModel", true, "Hide the player model (keeps its shadow).");
 
             Stereo.Init(Config);
@@ -863,6 +865,20 @@ namespace ShortHikeCamera
         {
             var p = Plugin.Instance;
             return p == null || !p.ourCameraLive;
+        }
+
+        // Fixed-length blend for any switch into or out of our camera.
+        [HarmonyPatch(typeof(CinemachineBrain), "LookupBlend")]
+        [HarmonyPostfix]
+        private static void LookupBlendPostfix(ICinemachineCamera fromKey, ICinemachineCamera toKey, ref CinemachineBlendDefinition __result)
+        {
+            var p = Plugin.Instance;
+            if (p == null || p.vcam == null) return;
+            if (!ReferenceEquals(fromKey, p.vcam) && !ReferenceEquals(toKey, p.vcam)) return;
+            float t = p.blendTime.Value;
+            __result = t > 0f
+                ? new CinemachineBlendDefinition(CinemachineBlendDefinition.Style.EaseInOut, t)
+                : new CinemachineBlendDefinition(CinemachineBlendDefinition.Style.Cut, 0f);
         }
 
         // LB is "previous item" while item switching is on, so it mustn't also put away / drop.

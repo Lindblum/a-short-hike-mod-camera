@@ -290,7 +290,7 @@ namespace ShortHikeCamera
 
         internal static string MenuText()
         {
-            string value = On ? "half sbs" : I18n.STRINGS.disabled;
+            string value = On ? "enabled" : "disabled";
             string hex = string.IsNullOrEmpty(OptionsMenu.OPTIONS_RED_HEX) ? "red" : OptionsMenu.OPTIONS_RED_HEX;
             return "3d: <color=" + hex + ">" + value + "</color>";
         }
