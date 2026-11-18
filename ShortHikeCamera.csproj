@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net472</TargetFramework>
     <AssemblyName>ShortHikeCamera</AssemblyName>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <RootNamespace>ShortHikeCamera</RootNamespace>
     <LangVersion>latest</LangVersion>
     <Nullable>disable</Nullable>
@@ -11,6 +11,10 @@
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <GamePath>C:\Program Files (x86)\Steam\steamapps\common\A Short Hike</GamePath>
     <Managed>$(GamePath)\AShortHike_Data\Managed</Managed>
+    <!-- The BepInEx build this mod is made and tested against; bundled into the -with-BepInEx ZIP. -->
+    <BepInExVersion>5.4.23.2</BepInExVersion>
+    <BepInExUrl>https://github.com/BepInEx/BepInEx/releases/download/v5.4.23.2/BepInEx_win_x86_5.4.23.2.zip</BepInExUrl>
+    <BepInExSha256>7dd51193587a86c11a58530aeeb4789b15763cc6cf2c55e71785cef4ef214253</BepInExSha256>
   </PropertyGroup>
 
   <ItemGroup>
@@ -37,17 +41,30 @@
     <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(GamePath)\BepInEx\plugins" />
   </Target>
 
-  <!-- Release builds also produce dist\ShortHikeCamera-<version>.zip for Nexus Mods:
-       its contents extract straight into the game folder. -->
-  <Target Name="PackageForNexus" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
+  <!-- Release builds also make the two ZIPs for GitHub / Nexus Mods in dist\. Both extract into the game folder.
+       <Name>-<version>-with-BepInEx.zip: BepInEx (pinned official build, hash-checked) + packaging\ + the plugin.
+       <Name>-<version>.zip:              the plugin only, for players who already have BepInEx or are updating. -->
+  <Target Name="PackageRelease" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
     <PropertyGroup>
-      <PackageStage>$(BaseIntermediateOutputPath)package\</PackageStage>
+      <PkgRoot>$(BaseIntermediateOutputPath)package\</PkgRoot>
+      <BepInExCache>$(BaseIntermediateOutputPath)bepinex\</BepInExCache>
+      <BepInExZip>$(BepInExCache)$([System.IO.Path]::GetFileName('$(BepInExUrl)'))</BepInExZip>
       <DistDir>$(MSBuildProjectDirectory)\dist\</DistDir>
+      <PluginDir>BepInEx\plugins\$(AssemblyName)\</PluginDir>
     </PropertyGroup>
-    <RemoveDir Directories="$(PackageStage)" />
-    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(PackageStage)BepInEx\plugins\ShortHikeCamera" />
+    <ItemGroup>
+      <PackagingFile Include="packaging\**\*" />
+    </ItemGroup>
+    <DownloadFile Condition="!Exists('$(BepInExZip)')" SourceUrl="$(BepInExUrl)" DestinationFolder="$(BepInExCache)" />
+    <VerifyFileHash File="$(BepInExZip)" Algorithm="SHA256" Hash="$(BepInExSha256)" />
+    <RemoveDir Directories="$(PkgRoot)" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(PkgRoot)mod\$(PluginDir)" />
+    <Unzip SourceFiles="$(BepInExZip)" DestinationFolder="$(PkgRoot)full\" />
+    <Copy SourceFiles="@(PackagingFile)" DestinationFiles="@(PackagingFile->'$(PkgRoot)full\%(RecursiveDir)%(Filename)%(Extension)')" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(PkgRoot)full\$(PluginDir)" />
     <MakeDir Directories="$(DistDir)" />
-    <ZipDirectory SourceDirectory="$(PackageStage)" DestinationFile="$(DistDir)ShortHikeCamera-$(Version).zip" Overwrite="true" />
+    <ZipDirectory SourceDirectory="$(PkgRoot)mod\" DestinationFile="$(DistDir)$(AssemblyName)-$(Version).zip" Overwrite="true" />
+    <ZipDirectory SourceDirectory="$(PkgRoot)full\" DestinationFile="$(DistDir)$(AssemblyName)-$(Version)-with-BepInEx.zip" Overwrite="true" />
   </Target>
 
 </Project>

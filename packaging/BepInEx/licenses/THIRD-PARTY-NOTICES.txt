@@ -1,0 +1,27 @@
+Third-party software included in ShortHikeCamera-<version>-with-BepInEx.zip
+===========================================================================
+
+This package includes an unmodified copy of BepInEx 5.4.23.2 (win x86), the
+official release from:
+  https://github.com/BepInEx/BepInEx/releases/tag/v5.4.23.2
+
+The only addition to it is BepInEx\config\BepInEx.cfg, which sets
+HideManagerGameObject = true (A Short Hike needs this to load plugins).
+
+BepInEx and the libraries it ships are listed below with their licenses. The
+full license texts are in this folder. Source code for each is available at
+the address given.
+
+Component         Files                                     License       Source
+----------------  ----------------------------------------  ------------  -------------------------------------------
+BepInEx           BepInEx\core\BepInEx*.dll                 MIT           https://github.com/BepInEx/BepInEx
+Unity Doorstop    winhttp.dll, doorstop_config.ini          LGPL-2.1      https://github.com/NeighTools/UnityDoorstop
+HarmonyX          BepInEx\core\0Harmony.dll,                MIT           https://github.com/BepInEx/HarmonyX
+                  BepInEx\core\HarmonyXInterop.dll
+Harmony           BepInEx\core\0Harmony20.dll               MIT           https://github.com/pardeike/Harmony
+                  (and code HarmonyX is derived from)
+MonoMod           BepInEx\core\MonoMod.*.dll                MIT           https://github.com/MonoMod/MonoMod
+Mono.Cecil        BepInEx\core\Mono.Cecil*.dll              MIT           https://github.com/jbevain/cecil
+
+License files: BepInEx.txt, UnityDoorstop.txt, HarmonyX.txt, Harmony.txt,
+MonoMod.txt, Mono.Cecil.txt.

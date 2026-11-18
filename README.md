@@ -16,11 +16,24 @@ A BepInEx mod for *A Short Hike* that adds player-controlled camera modes and ha
 - **Item switching:** **RB**/**LB** cycle through your items and none, without opening the pause menu.
 - Mode and item changes are announced in the top-left.
 
+## Requirements
+
+- *A Short Hike* for Windows (tested with the Steam version).
+- [BepInEx 5.4.23.2 (win x86)](https://github.com/BepInEx/BepInEx/releases/tag/v5.4.23.2), included in the `-with-BepInEx` download.
+
 ## Install
 
-1. Install [BepInEx 5 (x86)](https://github.com/BepInEx/BepInEx/releases) into the game folder (next to `AShortHike.exe`) and run the game once.
-2. In `BepInEx\config\BepInEx.cfg`, set `HideManagerGameObject = true`.
-3. Extract `ShortHikeCamera-<version>.zip` into the game folder (it puts `ShortHikeCamera.dll` in `BepInEx\plugins\ShortHikeCamera\`).
+1. Download `ShortHikeCamera-<version>-with-BepInEx.zip`.
+2. Extract it into the game folder, the one with `AShortHike.exe` in it. On Steam: right-click the game → **Manage** → **Browse local files**.
+3. Start the game. Press **R3** (or **F5**) to switch camera.
+
+The ZIP contains the mod, BepInEx and a `BepInEx\config\BepInEx.cfg` with the one setting the game needs (`HideManagerGameObject = true`).
+
+**Already have BepInEx 5?** Download `ShortHikeCamera-<version>.zip` (mod only) instead and extract it into the game folder. Make sure `HideManagerGameObject = true` is set in your `BepInEx\config\BepInEx.cfg`.
+
+## Updating
+
+Extract the new mod-only `ShortHikeCamera-<version>.zip` into the game folder and overwrite. Your settings are kept. If you installed an earlier version by copying `ShortHikeCamera.dll` straight into `BepInEx\plugins\`, delete that copy.
 
 ## Settings
 
@@ -60,7 +73,7 @@ Requires the .NET SDK. `GamePath` in `ShortHikeCamera.csproj` must point to your
 dotnet build -c Release
 ```
 
-This builds the plugin and copies it into the game's `BepInEx\plugins` folder.
+This builds the plugin and copies it into the game's `BepInEx\plugins` folder. Release builds also put both release ZIPs in `dist\`. The `-with-BepInEx` ZIP is made from the BepInEx build pinned in the `.csproj` (downloaded once and checked against its SHA-256 hash) plus the files in `packaging\`.
 
 ## Known limitations
 
@@ -70,4 +83,8 @@ This builds the plugin and copies it into the game's `BepInEx\plugins` folder.
 
 ## Uninstall
 
-Delete `BepInEx\plugins\ShortHikeCamera.dll`. To remove BepInEx entirely, also delete `winhttp.dll`, `doorstop_config.ini`, `.doorstop_version` and the `BepInEx` folder.
+Delete the `BepInEx\plugins\ShortHikeCamera` folder. To remove BepInEx as well, delete `winhttp.dll`, `doorstop_config.ini`, `.doorstop_version`, `changelog.txt` and the `BepInEx` folder from the game folder.
+
+## Licenses
+
+The `-with-BepInEx` download includes an unmodified copy of BepInEx and the libraries it ships with. Their licenses and source links are in `BepInEx\licenses\` (see `THIRD-PARTY-NOTICES.txt` there).

@@ -17,7 +17,7 @@ namespace ShortHikeCamera
     public class Plugin : BaseUnityPlugin
     {
         public const string Guid = "local.ashorthike.cameramodes";
-        public const string Version = "1.0.0"; // keep in step with <Version> in the .csproj
+        public const string Version = "1.0.1"; // keep in step with <Version> in the .csproj
 
         internal static Plugin Instance;
         internal static ManualLogSource Log;
