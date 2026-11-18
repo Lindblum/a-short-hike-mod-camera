@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net472</TargetFramework>
     <AssemblyName>ShortHikeCamera</AssemblyName>
-    <Version>1.0.1</Version>
+    <Version>1.0.2</Version>
     <RootNamespace>ShortHikeCamera</RootNamespace>
     <LangVersion>latest</LangVersion>
     <Nullable>disable</Nullable>
@@ -11,6 +11,8 @@
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <GamePath>C:\Program Files (x86)\Steam\steamapps\common\A Short Hike</GamePath>
     <Managed>$(GamePath)\AShortHike_Data\Managed</Managed>
+    <!-- BepInEx to build against. Override if it isn't installed in the game: dotnet build -p:BepInExDir="..." -->
+    <BepInExDir Condition="'$(BepInExDir)' == ''">$(GamePath)\BepInEx</BepInExDir>
     <!-- The BepInEx build this mod is made and tested against; bundled into the -with-BepInEx ZIP. -->
     <BepInExVersion>5.4.23.2</BepInExVersion>
     <BepInExUrl>https://github.com/BepInEx/BepInEx/releases/download/v5.4.23.2/BepInEx_win_x86_5.4.23.2.zip</BepInExUrl>
@@ -18,8 +20,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="BepInEx"><HintPath>$(GamePath)\BepInEx\core\BepInEx.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="0Harmony"><HintPath>$(GamePath)\BepInEx\core\0Harmony.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="BepInEx"><HintPath>$(BepInExDir)\core\BepInEx.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="0Harmony"><HintPath>$(BepInExDir)\core\0Harmony.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="Assembly-CSharp"><HintPath>$(Managed)\Assembly-CSharp.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="Cinemachine"><HintPath>$(Managed)\Cinemachine.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="InControl"><HintPath>$(Managed)\InControl.dll</HintPath><Private>false</Private></Reference>
@@ -36,9 +38,9 @@
     <Reference Include="UnityEngine.TextRenderingModule"><HintPath>$(Managed)\UnityEngine.TextRenderingModule.dll</HintPath><Private>false</Private></Reference>
   </ItemGroup>
 
-  <!-- Copy the built plugin into the game's BepInEx plugins folder. -->
-  <Target Name="DeployToGame" AfterTargets="Build">
-    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(GamePath)\BepInEx\plugins" />
+  <!-- Copy the built plugin into the game, where the ZIPs put it. Skipped when the game has no BepInEx, or with -p:Deploy=false. -->
+  <Target Name="DeployToGame" AfterTargets="Build" Condition="Exists('$(GamePath)\BepInEx\core') and '$(Deploy)' != 'false'">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(GamePath)\BepInEx\plugins\$(AssemblyName)" />
   </Target>
 
   <!-- Release builds also make the two ZIPs for GitHub / Nexus Mods in dist\. Both extract into the game folder.

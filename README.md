@@ -10,7 +10,8 @@ A BepInEx mod for *A Short Hike* that adds player-controlled camera modes and ha
   - **auto:** the game's original camera.
   - **3rd person:** orbit Claire with the right stick. The camera pulls in when terrain is in the way, and swings in behind your heading while you glide.
   - **1st person:** look from Claire's head with the right stick. Her model is hidden but still casts a shadow.
-  - On the ground the controls are the game's own: the left stick moves relative to the camera and the right stick owns the camera. While **gliding** (your right thumb is on jump), the left stick **turns** (←/→) and the camera follows your heading. Up/down while gliding: 3rd person, push up to dive and let go to glide flat; 1st person keeps the game's glide (stick pushed = flat, released = dive). Climbing and the boat keep the original controls.
+  - On the ground the controls are the game's own: the left stick moves relative to the camera and the right stick owns the camera. While **gliding** (your right thumb is on jump), the left stick **turns** (←/→) and the camera follows your heading. Diving works as in the game in both modes: hold the stick to glide flat, let go to dive. Climbing and the boat keep the original controls.
+  - In conversations the right stick still turns the camera.
   - The game's cutscene, fishing and similar cameras still take over when needed.
 - **3D (half SBS):** toggle with **options → graphics → 3d**. Each eye is a full render, so outlines and colour correction work in 3D. HUD and text appear in both eyes at screen depth. Opening screens, the title screen and menus are shown flat in both eyes.
 - **Item switching:** **RB**/**LB** cycle through your items and none, without opening the pause menu.
@@ -47,8 +48,7 @@ Extract the new mod-only `ShortHikeCamera-<version>.zip` into the game folder an
 | Controls | `Steering` | Auto | `Auto`: Turn while gliding, Strafe otherwise. `Turn`: left stick ←/→ turns, ↑/↓ moves. `Strafe`: original camera-relative movement |
 | Controls | `TurnSpeed` | 75 | Turn rate (°/s) |
 | Controls | `ItemSwitching` | true | RB/LB cycle items (replaces LB put-away/drop) |
-| Controls | `GlidePitch` | true | While turn-steering a glide: left stick ↑ = dive, neutral/↓ = flat glide (3rd person only; 1st person keeps the game's glide) |
-| Controls | `GlideDiveCameraPitch` | 30 | Extra camera tilt at a full dive (°) |
+| Controls | `GlideDiveCameraPitch` | 30 | Extra camera tilt at a full dive, 3rd person (°) |
 | General | `BlendTime` | 1 | Seconds to blend between the game's cameras and the mod's (entering 3rd person, leaving 1st person; 0 = instant) |
 | ThirdPerson | `Distance` | 10 | Camera distance |
 | ThirdPerson | `PivotHeight` | 2.2 | Orbit point height above feet |

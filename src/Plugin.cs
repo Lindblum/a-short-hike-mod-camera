@@ -5,6 +5,7 @@ using BepInEx.Logging;
 using Cinemachine;
 using HarmonyLib;
 using InControl;
+using QuickUnityTools.Input;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -17,7 +18,7 @@ namespace ShortHikeCamera
     public class Plugin : BaseUnityPlugin
     {
         public const string Guid = "local.ashorthike.cameramodes";
-        public const string Version = "1.0.1"; // keep in step with <Version> in the .csproj
+        public const string Version = "1.0.2"; // keep in step with <Version> in the .csproj
 
         internal static Plugin Instance;
         internal static ManualLogSource Log;
@@ -29,7 +30,6 @@ namespace ShortHikeCamera
         internal ConfigEntry<SteeringMode> steering;
         internal ConfigEntry<bool> itemCycle;
         internal ConfigEntry<float> turnSpeed;
-        internal ConfigEntry<bool> glidePitch;
         internal ConfigEntry<float> glideDiveCameraPitch;
         internal ConfigEntry<float> tpDistance, tpPivotHeight, tpFov, tpMinPitch, tpMaxPitch;
         internal ConfigEntry<float> followGlideSpeed, followGlidePitch;
@@ -73,7 +73,6 @@ namespace ShortHikeCamera
             invertY = Config.Bind("Controls", "InvertY", false, "Invert vertical look.");
             itemCycle = Config.Bind("Controls", "ItemSwitching", true, "RB/LB cycle through your items (and none), like equipping from the pause menu. Replaces LB's put-away/drop.");
             steering = Config.Bind("Controls", "Steering", SteeringMode.Auto, "3rd/1st person left stick. Auto = Turn while gliding (right thumb holds jump), Strafe otherwise. Turn = left/right turns, up/down moves. Strafe = game's original camera-relative movement.");
-            glidePitch = Config.Bind("Controls", "GlidePitch", true, "While turn-steering a glide, left stick up = dive (more the further you push), neutral/down = flat glide.");
             glideDiveCameraPitch = Config.Bind("Controls", "GlideDiveCameraPitch", 30f, "How much further the camera tilts down at a full dive, degrees.");
             turnSpeed = Config.Bind("Controls", "TurnSpeed", 75f, "Turn rate at full left-stick deflection (Turn steering), degrees/second.");
 
@@ -186,9 +185,11 @@ namespace ShortHikeCamera
             bool wantLive = mode != CameraMode.Auto && foreign == null && !cinemaCamActive;
             SetOurCameraLive(wantLive);
 
-            if (ourCameraLive && inputFocused)
+            // In dialogue the conversation holds input focus, but the right stick is free: keep looking around.
+            bool inConversation = !inputFocused && InConversation();
+            if (ourCameraLive && (inputFocused || inConversation))
             {
-                Vector2 look = player.input.GetLookDirection();
+                Vector2 look = inputFocused ? player.input.GetLookDirection() : GameUserInput.sharedActionSet.rightStick.Vector;
                 float dt = Time.deltaTime;
                 float lookYaw = look.x * yawSpeed.Value * dt;
                 yaw += lookYaw;
@@ -197,7 +198,7 @@ namespace ShortHikeCamera
                 if (look.sqrMagnitude > 0.04f) lookIdleTime = 0f;
                 else lookIdleTime += dt;
 
-                bool turning = TurnSteeringActive(player);
+                bool turning = inputFocused && TurnSteeringActive(player);
                 if (turning && !wasTurning) BeginTurnSteering();
                 wasTurning = turning;
 
@@ -330,18 +331,16 @@ namespace ShortHikeCamera
             FollowGlidePitch(dt, followGlidePitch.Value);
         }
 
-        /// How far into a dive (0 = flat glide, 1 = full dive) turn steering wants Claire (3rd person: LS up = dive).
-        internal float GlideDiveTarget(Player p)
-        {
-            return Mathf.Clamp01(p.input.GetMovement().y);
-        }
+        // How far Claire is tilted into a dive: 0 = flat glide, 1 = full dive.
+        private static readonly AccessTools.FieldRef<Player, float> glideTiltRef =
+            AccessTools.FieldRefAccess<Player, float>("glideTiltPercent");
 
         /// While gliding with the right stick idle, ease the camera pitch to basePitch, tilting further
-        /// down as Claire dives (glide pitch on LS up/down).
+        /// down as Claire dives (the game's glide: stick released = dive).
         private void FollowGlidePitch(float dt, float basePitch)
         {
             if (lookIdleTime <= 0f || !player.isGliding) return;
-            float dive = glidePitch.Value ? Patches.glideTiltRef(player) : 0f;
+            float dive = glideTiltRef(player);
             float target = basePitch + Mathf.Max(0f, dive) * glideDiveCameraPitch.Value;
             pitch = Mathf.MoveTowards(pitch, target, 45f * dt);
         }
@@ -428,6 +427,14 @@ namespace ShortHikeCamera
                 case CameraMode.FirstPerson: return "1st person";
                 default: return "auto";
             }
+        }
+
+        /// True while a conversation (TextBoxConversation) holds input focus.
+        private static bool InConversation()
+        {
+            var manager = Singleton<FocusableUserInputManager>.instance;
+            var focus = manager != null ? manager.inputWithFocus : null;
+            return focus != null && focus.gameObject.name == "Conversation Focus Holder";
         }
 
         private void ClampPitch()
@@ -908,49 +915,6 @@ namespace ShortHikeCamera
             Vector3 fwd = Quaternion.Euler(0f, p.steerHeading, 0f) * Vector3.forward;
             __result = fwd * forward;
             return false;
-        }
-
-        // Glide pitch. The game tilts Claire nose-down (dive) when the stick is released and flattens
-        // the glide when it's pushed: glideTiltPercent = 1 - |stick|. In turn steering, LS up/down
-        // drives that instead: up = dive (proportional), neutral/down = flat glide.
-        internal static readonly AccessTools.FieldRef<Player, float> glideTiltRef =
-            AccessTools.FieldRefAccess<Player, float>("glideTiltPercent");
-        private static readonly AccessTools.FieldRef<Player, float> glideSpeedRef =
-            AccessTools.FieldRefAccess<Player, float>("glideSpeed");
-        private static readonly System.Func<Player, bool> isInUpdraft =
-            AccessTools.MethodDelegate<System.Func<Player, bool>>(AccessTools.PropertyGetter(typeof(Player), "isInUpdraft"));
-
-        [HarmonyPatch(typeof(Player), "Update")]
-        [HarmonyPrefix]
-        private static void PlayerUpdatePrefix(Player __instance, out float __state)
-        {
-            __state = glideTiltRef(__instance);
-        }
-
-        [HarmonyPatch(typeof(Player), "Update")]
-        [HarmonyPostfix]
-        private static void PlayerUpdatePostfix(Player __instance, float __state)
-        {
-            var p = Plugin.Instance;
-            if (p == null || !p.glidePitch.Value || !__instance.isGliding || !p.TurnSteeringActive(__instance)) return;
-            if (p.mode == CameraMode.FirstPerson) return; // 1st person keeps the game's glide: stick pushed = flat, released = dive
-            if (isInUpdraft(__instance)) return; // keep the game's updraft behaviour
-
-            float target = p.GlideDiveTarget(__instance);
-            float tilt = Mathf.Lerp(__state, target, Time.deltaTime * __instance.glideTiltSpeed);
-            glideTiltRef(__instance) = tilt;
-
-            // Recompute what the game derived from the tilt this frame (speed cap + body pose).
-            float angle = Mathf.LerpUnclamped(0f, 60f, tilt); // same constant as Player.glideAngle
-            float cap = __instance.maxGlideSpeed * Mathf.Cos(angle * Mathf.Deg2Rad);
-            float speed = Mathf.Min(__instance.body.velocity.magnitude, cap);
-            glideSpeedRef(__instance) = Mathf.Max(__instance.maxSpeed, speed);
-            if (__instance.ikAnimator != null)
-            {
-                Vector3 e = __instance.ikAnimator.transform.eulerAngles;
-                e.x = angle;
-                __instance.ikAnimator.transform.eulerAngles = e;
-            }
         }
     }
 }
